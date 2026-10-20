@@ -11,3 +11,6 @@ build
 
 *.log
 .idea/
+
+apps/api/src/generated/prisma/
+**/*.tsbuildinfo
