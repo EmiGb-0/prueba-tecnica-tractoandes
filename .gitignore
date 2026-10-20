@@ -7,5 +7,7 @@ coverage/
 .env.*
 !.env.example
 
+build
+
 *.log
 .idea/
