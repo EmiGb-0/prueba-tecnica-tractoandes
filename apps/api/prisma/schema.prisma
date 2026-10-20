@@ -1,35 +1,35 @@
 generator client {
-    provider     = "prisma-client"
-    output       = "../src/generated/prisma"
-    moduleFormat = "cjs"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
-    provider = "postgresql"
+  provider = "postgresql"
 }
 
 model User {
-    id           String   @id @default(uuid()) @db.Uuid
-    name         String   @db.VarChar(120)
-    email        String   @unique @db.VarChar(255)
-    passwordHash String   @map("password_hash") @db.VarChar(255)
-    createdAt    DateTime @default(now()) @map("created_at")
-    updatedAt    DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(120)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-    @@map("users")
+  @@map("users")
 }
 
 model Book {
-    id              String   @id @default(uuid()) @db.Uuid
-    isbn            String   @unique @db.VarChar(100)
-    title           String   @map("titulo") @db.VarChar(255)
-    author          String   @map("autor") @db.VarChar(200)
-    genre           String   @map("genero") @db.VarChar(100)
-    publicationYear Int      @map("anio_publicacion")
-    pages           Int      @map("paginas")
-    synopsis        String?  @map("sinopsis") @db.Text
-    createdAt       DateTime @default(now()) @map("created_at")
-    updatedAt       DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  isbn            String   @unique @db.VarChar(100)
+  title           String   @map("titulo") @db.VarChar(255)
+  author          String   @map("autor") @db.VarChar(200)
+  genre           String   @map("genero") @db.VarChar(100)
+  publicationYear Int      @map("anio_publicacion")
+  pages           Int      @map("paginas")
+  synopsis        String?  @map("sinopsis") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-    @@map("books")
+  @@map("books")
 }

@@ -1,9 +1,18 @@
 {
-  "name": "prueba-tecnica-tractoandes",
-  "version": "0.1.0",
-  "private": true,
-  "packageManager": "pnpm@12.8.1",
-  "engines": {
-    "node": ">=24"
-  }
+    "name": "prueba-tecnica-tractoandes",
+    "version": "0.1.0",
+    "private": true,
+    "packageManager": "pnpm@12.8.1",
+    "engines": {
+        "node": ">=24"
+    },
+    "devDependencies": {
+        "prettier": "^3.9.10"
+    },
+    "scripts": {
+        "format": "prettier . --write",
+        "format:check": "prettier . --check",
+        "lint:api": "pnpm --filter api exec eslint \"src/**/*.ts\"",
+        "lint:web": "pnpm --filter web lint"
+    }
 }
