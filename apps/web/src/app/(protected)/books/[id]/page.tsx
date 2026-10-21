@@ -1,51 +1,24 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 
-import { Book, booksApi } from '@/lib/books';
+import { getBook } from '@/lib/server/books';
 
-export default function BookDetailPage() {
-    const { id } = useParams<{ id: string }>();
-    const [book, setBook] = useState<Book | null>(null);
-    const [error, setError] = useState<string | null>(null);
+interface BookDetailPageProps {
+    params: Promise<{
+        id: string;
+    }>;
+}
 
-    useEffect(() => {
-        let active = true;
-
-        booksApi<Book>(`/${id}`)
-            .then((data) => {
-                if (active) setBook(data);
-            })
-            .catch((err: unknown) => {
-                if (active) {
-                    setError(err instanceof Error ? err.message : 'No se pudo cargar el libro');
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [id]);
-
-    if (error) {
-        return (
-            <p role="alert" className="text-red-400">
-                {error}
-            </p>
-        );
-    }
-
-    if (!book) {
-        return <p className="text-zinc-400">Cargando libro...</p>;
-    }
+export default async function BookDetailPage({ params }: BookDetailPageProps) {
+    const { id } = await params;
+    const book = await getBook(id);
 
     return (
         <section className="max-w-3xl space-y-8">
             <div>
                 <p className="mb-2 text-emerald-400">{book.genre}</p>
+
                 <h1 className="text-4xl font-semibold">{book.title}</h1>
+
                 <p className="mt-3 text-lg text-zinc-400">{book.author}</p>
             </div>
 
@@ -68,6 +41,7 @@ export default function BookDetailPage() {
 
             <div>
                 <h2 className="mb-3 text-xl font-semibold">Sinopsis</h2>
+
                 <p className="whitespace-pre-wrap text-zinc-400">
                     {book.synopsis || 'Sin sinopsis disponible.'}
                 </p>
