@@ -89,7 +89,8 @@ async function main() {
 
     const listing = await request('/books', 'GET', undefined, cookie);
     verify('Listar libros', listing, 200);
-    assert.ok(Array.isArray(listing.data));
+    assert.ok(Array.isArray(listing.data.data));
+    assert.ok(listing.data.meta.total >= 5);
 
     const book = {
         isbn: `AUDIT-${uniqueId}`,
@@ -136,6 +137,61 @@ async function main() {
     assert.ok(bookId);
 
     verify('ISBN duplicado', await request('/books', 'POST', book, cookie), 409);
+
+    const titleSearch = await request(
+        `/books?search=${encodeURIComponent(book.title)}`,
+        'GET',
+        undefined,
+        cookie,
+    );
+
+    verify('Buscar por título', titleSearch, 200);
+    assert.ok(titleSearch.data.data.some((item) => item.id === bookId));
+
+    const authorSearch = await request(
+        `/books?search=${encodeURIComponent(book.author)}`,
+        'GET',
+        undefined,
+        cookie,
+    );
+
+    verify('Buscar por autor', authorSearch, 200);
+    assert.ok(authorSearch.data.data.some((item) => item.id === bookId));
+
+    const genreFilter = await request(
+        `/books?genre=${encodeURIComponent(book.genre)}`,
+        'GET',
+        undefined,
+        cookie,
+    );
+
+    verify('Filtrar por género', genreFilter, 200);
+    assert.ok(genreFilter.data.data.some((item) => item.id === bookId));
+
+    const genres = await request('/books/genres', 'GET', undefined, cookie);
+
+    verify('Consultar géneros', genres, 200);
+    assert.ok(genres.data.includes(book.genre));
+
+    verify('Proteger consulta de géneros', await request('/books/genres'), 401);
+
+    const pagination = await request('/books?page=1&limit=2', 'GET', undefined, cookie);
+
+    verify('Paginar catálogo', pagination, 200);
+    assert.equal(pagination.data.meta.limit, 2);
+    assert.ok(pagination.data.data.length <= 2);
+
+    verify(
+        'Rechazar página inválida',
+        await request('/books?page=0', 'GET', undefined, cookie),
+        400,
+    );
+
+    verify(
+        'Rechazar límite inválido',
+        await request('/books?limit=51', 'GET', undefined, cookie),
+        400,
+    );
 
     verify('Consultar detalle', await request(`/books/${bookId}`, 'GET', undefined, cookie), 200);
 

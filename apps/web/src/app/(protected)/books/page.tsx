@@ -1,10 +1,61 @@
 import Link from 'next/link';
 
 import { DeleteBookButton } from '@/components/books/delete-book-button';
-import { getBooks } from '@/lib/server/books';
+import { getBookGenres, getBooks } from '@/lib/server/books';
 
-export default async function BooksPage() {
-    const books = await getBooks();
+const PAGE_SIZE = 10;
+
+interface BooksPageProps {
+    searchParams: Promise<{
+        search?: string | string[];
+        genre?: string | string[];
+        page?: string | string[];
+    }>;
+}
+
+function getString(value: string | string[] | undefined): string {
+    return typeof value === 'string' ? value.trim() : '';
+}
+
+function getPage(value: string | string[] | undefined): number {
+    if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+        return 1;
+    }
+
+    const page = Number(value);
+
+    return Number.isSafeInteger(page) && page >= 1 && page <= 10000 ? page : 1;
+}
+
+function pageHref(page: number, search: string, genre: string): string {
+    const params = new URLSearchParams();
+
+    if (search) params.set('search', search);
+    if (genre) params.set('genre', genre);
+
+    params.set('page', String(page));
+
+    return `/books?${params.toString()}`;
+}
+
+export default async function BooksPage({ searchParams }: BooksPageProps) {
+    const params = await searchParams;
+
+    const search = getString(params.search).slice(0, 150);
+    const genre = getString(params.genre).slice(0, 100);
+    const page = getPage(params.page);
+
+    const [result, genres] = await Promise.all([
+        getBooks({
+            search,
+            genre,
+            page,
+            limit: PAGE_SIZE,
+        }),
+        getBookGenres(),
+    ]);
+
+    const { data: books, meta } = result;
 
     return (
         <section className="space-y-8">
@@ -17,16 +68,95 @@ export default async function BooksPage() {
 
                 <Link
                     href="/books/new"
-                    className="rounded-lg bg-emerald-500 px-5 py-3 font-medium text-zinc-950"
+                    className="rounded-lg bg-emerald-500 px-5 py-3 font-medium text-zinc-950 hover:bg-emerald-400"
                 >
                     Añadir libro
                 </Link>
             </div>
 
-            {books.length === 0 ? (
-                <p className="rounded-xl border border-zinc-800 p-8 text-zinc-400">
-                    No hay libros registrados.
+            <form
+                action="/books"
+                method="GET"
+                className="grid gap-4 rounded-xl border border-zinc-800 p-5 sm:grid-cols-[1fr_220px_auto]"
+            >
+                <div>
+                    <label htmlFor="search" className="mb-2 block text-sm text-zinc-300">
+                        Buscar por título o autor
+                    </label>
+
+                    <input
+                        id="search"
+                        name="search"
+                        type="search"
+                        defaultValue={search}
+                        maxLength={150}
+                        placeholder="Ej. Gabriel García Márquez"
+                        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-emerald-500"
+                    />
+                </div>
+
+                <div>
+                    <label htmlFor="genre" className="mb-2 block text-sm text-zinc-300">
+                        Género
+                    </label>
+
+                    <select
+                        id="genre"
+                        name="genre"
+                        defaultValue={genre}
+                        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-emerald-500"
+                    >
+                        <option value="">Todos los géneros</option>
+
+                        {genres.map((item) => (
+                            <option key={item} value={item}>
+                                {item}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="flex items-end gap-2">
+                    <button
+                        type="submit"
+                        className="rounded-lg bg-emerald-500 px-5 py-3 font-medium text-zinc-950 hover:bg-emerald-400"
+                    >
+                        Buscar
+                    </button>
+
+                    <Link
+                        href="/books"
+                        className="rounded-lg border border-zinc-700 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800"
+                    >
+                        Limpiar
+                    </Link>
+                </div>
+            </form>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-zinc-400">
+                    {meta.total} libro{meta.total === 1 ? '' : 's'} encontrado
+                    {meta.total === 1 ? '' : 's'}
                 </p>
+
+                <p className="text-sm text-zinc-500">Hasta {meta.limit} libros por página</p>
+            </div>
+
+            {books.length === 0 ? (
+                <div className="space-y-3 rounded-xl border border-zinc-800 p-8 text-center">
+                    <p className="text-zinc-300">No se encontraron libros.</p>
+
+                    <p className="text-sm text-zinc-500">
+                        Modifica los filtros o vuelve al catálogo.
+                    </p>
+
+                    <Link
+                        href="/books"
+                        className="inline-block text-sm text-emerald-400 hover:underline"
+                    >
+                        Ver todos los libros
+                    </Link>
+                </div>
             ) : (
                 <div className="overflow-x-auto rounded-xl border border-zinc-800">
                     <table className="w-full text-left text-sm">
@@ -74,6 +204,42 @@ export default async function BooksPage() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {meta.total > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <p className="text-sm text-zinc-400">
+                        Página {meta.page} de {meta.totalPages}
+                    </p>
+
+                    <div className="flex gap-3">
+                        {meta.page > 1 ? (
+                            <Link
+                                href={pageHref(meta.page - 1, search, genre)}
+                                className="rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800"
+                            >
+                                Anterior
+                            </Link>
+                        ) : (
+                            <span className="cursor-not-allowed rounded-lg border border-zinc-800 px-4 py-2 text-sm text-zinc-600">
+                                Anterior
+                            </span>
+                        )}
+
+                        {meta.page < meta.totalPages ? (
+                            <Link
+                                href={pageHref(meta.page + 1, search, genre)}
+                                className="rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800"
+                            >
+                                Siguiente
+                            </Link>
+                        ) : (
+                            <span className="cursor-not-allowed rounded-lg border border-zinc-800 px-4 py-2 text-sm text-zinc-600">
+                                Siguiente
+                            </span>
+                        )}
+                    </div>
                 </div>
             )}
         </section>
