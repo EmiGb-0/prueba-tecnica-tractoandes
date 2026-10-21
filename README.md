@@ -275,3 +275,62 @@ El historial completo puede consultarse en la sección Pull Requests del reposit
 ---
 
 **Prueba técnica Full Stack — Tractoandes.**
+
+## Funcionalidades adicionales y autorización
+
+### Búsqueda, filtros y paginación
+
+El catálogo admite búsqueda por título o autor, filtro por género y paginación directamente desde PostgreSQL.
+
+Parámetros de `GET /books`:
+
+| Parámetro | Descripción                                        |
+| --------- | -------------------------------------------------- |
+| `search`  | Búsqueda parcial por título o autor                |
+| `genre`   | Filtro por género                                  |
+| `page`    | Número de página, predeterminado 1                 |
+| `limit`   | Registros por página, predeterminado 10, máximo 50 |
+
+`GET /books/genres` devuelve los géneros disponibles. Ambos endpoints requieren autenticación.
+
+### Control de acceso basado en roles
+
+El sistema implementa dos roles:
+
+| Acción                             | ADMIN     | READER    |
+| ---------------------------------- | --------- | --------- |
+| Consultar, buscar y filtrar libros | Permitido | Permitido |
+| Crear libros                       | Permitido | Denegado  |
+| Editar libros                      | Permitido | Denegado  |
+| Eliminar libros                    | Permitido | Denegado  |
+
+Las cuentas nuevas reciben `READER` por defecto. El usuario de demostración recibe `ADMIN` durante el seed.
+
+Los permisos se verifican mediante `SessionGuard` y `RolesGuard` en NestJS. Los Server Components de Next.js adaptan las interfaces al rol autenticado, pero no sustituyen las verificaciones del backend.
+
+Las solicitudes sin autenticación devuelven `401 Unauthorized`. Las operaciones no permitidas para un usuario autenticado devuelven `403 Forbidden`.
+
+### Pruebas de autorización
+
+El comando `pnpm test:smoke` verifica autenticación, permisos, validaciones, CRUD, búsqueda, filtros y paginación mediante peticiones HTTP.
+
+Las pruebas utilizan una cuenta temporal `READER` y la cuenta de demostración `ADMIN`.
+
+Variables opcionales para configurar las credenciales administrativas de prueba:
+
+- `ADMIN_TEST_EMAIL`
+- `ADMIN_TEST_PASSWORD`
+
+Se recomienda ejecutar estas pruebas exclusivamente en un entorno local o de pruebas.
+
+## Limitaciones y mejoras futuras
+
+- Incorporar estados de lectura individuales por usuario: pendiente, leyendo y leído.
+- Añadir filtros por estado de lectura en el catálogo.
+- Publicar la aplicación en infraestructura accesible mediante HTTPS.
+- Incorporar pruebas automatizadas de navegación y autorización en el frontend.
+- Agregar limitación de solicitudes a los endpoints de autenticación.
+- Implementar revocación anticipada de sesiones o tokens.
+- Revisar la configuración de cookies y secretos para producción.
+
+El proyecto mantiene sus servicios independientes y las migraciones versionadas, permitiendo incorporar estas mejoras sin reemplazar la arquitectura existente.

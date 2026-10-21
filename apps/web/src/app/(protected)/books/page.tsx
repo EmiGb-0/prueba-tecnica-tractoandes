@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { DeleteBookButton } from '@/components/books/delete-book-button';
 import { getBookGenres, getBooks } from '@/lib/server/books';
 
+import { getSessionUser } from '@/lib/server/session';
+
 const PAGE_SIZE = 10;
 
 interface BooksPageProps {
@@ -10,6 +12,7 @@ interface BooksPageProps {
         search?: string | string[];
         genre?: string | string[];
         page?: string | string[];
+        forbidden?: string | string[];
     }>;
 }
 
@@ -45,7 +48,7 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
     const genre = getString(params.genre).slice(0, 100);
     const page = getPage(params.page);
 
-    const [result, genres] = await Promise.all([
+    const [result, genres, user] = await Promise.all([
         getBooks({
             search,
             genre,
@@ -53,8 +56,8 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
             limit: PAGE_SIZE,
         }),
         getBookGenres(),
+        getSessionUser(),
     ]);
-
     const { data: books, meta } = result;
 
     return (
@@ -66,13 +69,25 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
                     <p className="mt-2 text-zinc-400">Administra los libros del club de lectura.</p>
                 </div>
 
-                <Link
-                    href="/books/new"
-                    className="rounded-lg bg-emerald-500 px-5 py-3 font-medium text-zinc-950 hover:bg-emerald-400"
-                >
-                    Añadir libro
-                </Link>
+                {user.role === 'ADMIN' && (
+                    <Link
+                        href="/books/new"
+                        className="rounded-lg bg-emerald-500 px-5 py-3 font-medium text-zinc-950 hover:bg-emerald-400"
+                    >
+                        Añadir libro
+                    </Link>
+                )}
             </div>
+
+            {params.forbidden === '1' && (
+                <p
+                    role="alert"
+                    className="rounded-lg border border-amber-800 bg-amber-950 p-4 text-amber-200"
+                >
+                    No tienes permisos para crear o editar libros. Tu cuenta tiene acceso de solo
+                    lectura.
+                </p>
+            )}
 
             <form
                 action="/books"
@@ -190,14 +205,21 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
                                                 Ver
                                             </Link>
 
-                                            <Link
-                                                href={`/books/${book.id}/edit`}
-                                                className="text-blue-400"
-                                            >
-                                                Editar
-                                            </Link>
+                                            {user.role === 'ADMIN' && (
+                                                <>
+                                                    <Link
+                                                        href={`/books/${book.id}/edit`}
+                                                        className="text-blue-400"
+                                                    >
+                                                        Editar
+                                                    </Link>
 
-                                            <DeleteBookButton id={book.id} title={book.title} />
+                                                    <DeleteBookButton
+                                                        id={book.id}
+                                                        title={book.title}
+                                                    />
+                                                </>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
