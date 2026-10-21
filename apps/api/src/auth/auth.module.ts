@@ -20,7 +20,9 @@ import { SessionGuard } from './guards/session/session.guard';
                     throw new Error('JWT_SECRET must contain at least 32 characters');
                 }
 
-                const secret = configuredSecret ?? randomBytes(48).toString('hex');
+                const secret = configuredSecret?.trim()
+                    ? configuredSecret
+                    : randomBytes(48).toString('hex');
 
                 return {
                     secret,
