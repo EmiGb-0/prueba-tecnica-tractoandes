@@ -4,7 +4,7 @@ import { PrismaClient, UserRole } from '../generated/prisma/client';
 import * as argon2 from 'argon2';
 
 async function main(): Promise<void> {
-    const databaseUrl = process.env.DATABASE_URL;
+    const databaseUrl = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
 
     if (!databaseUrl) {
         throw new Error('DATABASE_URL is required');
@@ -17,18 +17,38 @@ async function main(): Promise<void> {
     });
 
     try {
-        const passwordHash = await argon2.hash('DemoPass123!', { type: argon2.argon2id });
+        const configuredEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase() ?? '';
+
+        const configuredPassword = process.env.SEED_ADMIN_PASSWORD ?? '';
+
+        const useDemoCredentials =
+            process.env.SEED_ALLOW_DEMO === 'true' && !configuredEmail && !configuredPassword;
+
+        const adminEmail = useDemoCredentials ? 'demo@tractoandes.test' : configuredEmail;
+
+        const adminPassword = useDemoCredentials ? 'DemoPass123!' : configuredPassword;
+
+        if (!adminEmail || adminPassword.length < 12) {
+            throw new Error(
+                'Debes configurar SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD (mínimo 12 caracteres)',
+            );
+        }
+
+        const passwordHash = await argon2.hash(adminPassword, {
+            type: argon2.argon2id,
+        });
 
         await prisma.user.upsert({
             where: {
-                email: 'demo@tractoandes.test',
+                email: adminEmail,
             },
             update: {
+                passwordHash,
                 role: UserRole.ADMIN,
             },
             create: {
-                name: 'Usuario Demo',
-                email: 'demo@tractoandes.test',
+                name: 'Administrador',
+                email: adminEmail,
                 passwordHash,
                 role: UserRole.ADMIN,
             },
