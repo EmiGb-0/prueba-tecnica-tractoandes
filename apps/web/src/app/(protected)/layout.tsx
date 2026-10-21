@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 
 import { LogoutButton } from '@/components/auth/logout-button';
 
+export const dynamic = 'force-dynamic';
+
 type SessionUser = {
     id: string;
     name: string;
