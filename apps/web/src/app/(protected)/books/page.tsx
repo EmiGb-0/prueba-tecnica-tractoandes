@@ -1,59 +1,10 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-import { Book, booksApi } from '@/lib/books';
+import { DeleteBookButton } from '@/components/books/delete-book-button';
+import { getBooks } from '@/lib/server/books';
 
-export default function BooksPage() {
-    const [books, setBooks] = useState<Book[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [deletingId, setDeletingId] = useState<string | null>(null);
-
-    useEffect(() => {
-        let active = true;
-
-        booksApi<Book[]>()
-            .then((data) => {
-                if (active) setBooks(data);
-            })
-            .catch((err: unknown) => {
-                if (active) {
-                    setError(
-                        err instanceof Error ? err.message : 'No se pudieron cargar los libros',
-                    );
-                }
-            })
-            .finally(() => {
-                if (active) setLoading(false);
-            });
-
-        return () => {
-            active = false;
-        };
-    }, []);
-
-    async function removeBook(book: Book) {
-        const confirmed = window.confirm(`¿Estás seguro de eliminar "${book.title}"?`);
-
-        if (!confirmed) return;
-
-        setDeletingId(book.id);
-        setError(null);
-
-        try {
-            await booksApi<void>(`/${book.id}`, {
-                method: 'DELETE',
-            });
-
-            setBooks((current) => current.filter((item) => item.id !== book.id));
-        } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'No se pudo eliminar el libro');
-        } finally {
-            setDeletingId(null);
-        }
-    }
+export default async function BooksPage() {
+    const books = await getBooks();
 
     return (
         <section className="space-y-8">
@@ -72,18 +23,7 @@ export default function BooksPage() {
                 </Link>
             </div>
 
-            {error && (
-                <p
-                    role="alert"
-                    className="rounded-lg border border-red-900 bg-red-950 p-4 text-red-300"
-                >
-                    {error}
-                </p>
-            )}
-
-            {loading ? (
-                <p className="text-zinc-400">Cargando libros...</p>
-            ) : books.length === 0 ? (
+            {books.length === 0 ? (
                 <p className="rounded-xl border border-zinc-800 p-8 text-zinc-400">
                     No hay libros registrados.
                 </p>
@@ -104,11 +44,15 @@ export default function BooksPage() {
                             {books.map((book) => (
                                 <tr key={book.id} className="border-t border-zinc-800">
                                     <td className="p-4 font-medium">{book.title}</td>
+
                                     <td className="p-4">{book.author}</td>
+
                                     <td className="p-4">{book.genre}</td>
+
                                     <td className="p-4">{book.isbn}</td>
+
                                     <td className="p-4">
-                                        <div className="flex gap-3">
+                                        <div className="flex flex-wrap items-center gap-3">
                                             <Link
                                                 href={`/books/${book.id}`}
                                                 className="text-emerald-400"
@@ -123,14 +67,7 @@ export default function BooksPage() {
                                                 Editar
                                             </Link>
 
-                                            <button
-                                                type="button"
-                                                disabled={deletingId === book.id}
-                                                onClick={() => removeBook(book)}
-                                                className="text-red-400 disabled:opacity-50"
-                                            >
-                                                Eliminar
-                                            </button>
+                                            <DeleteBookButton id={book.id} title={book.title} />
                                         </div>
                                     </td>
                                 </tr>
