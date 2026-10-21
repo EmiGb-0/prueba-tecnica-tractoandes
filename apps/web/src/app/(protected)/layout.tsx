@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 
 import { LogoutButton } from '@/components/auth/logout-button';
 
+export const dynamic = 'force-dynamic';
+
 type SessionUser = {
     id: string;
     name: string;
@@ -45,7 +47,7 @@ async function AuthenticatedContent({ children }: { children: ReactNode }) {
             <header className="border-b border-zinc-800">
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
                     <div>
-                        <h1 className="text-xl font-semibold">Club de lectura</h1>
+                        <h1 className="text-xl font-semibold">Crud de Libros</h1>
                         <p className="text-sm text-zinc-400">Bienvenido, {user.name}</p>
                     </div>
 
