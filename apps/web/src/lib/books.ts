@@ -20,6 +20,16 @@ export type BookInput = Pick<
     synopsis?: string;
 };
 
+export interface PaginatedBooksResponse {
+    data: Book[];
+    meta: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+}
+
 export async function booksApi<T>(path = '', options: RequestInit = {}): Promise<T> {
     const headers = new Headers(options.headers);
 

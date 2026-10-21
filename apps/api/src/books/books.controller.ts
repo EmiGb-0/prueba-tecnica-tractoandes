@@ -9,6 +9,7 @@ import {
     ParseUUIDPipe,
     Patch,
     Post,
+    Query,
     UseGuards,
 } from '@nestjs/common';
 
@@ -16,6 +17,7 @@ import { SessionGuard } from '../auth/guards/session/session.guard';
 import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { QueryBooksDto } from './dto/query-books.dto';
 
 @Controller('books')
 @UseGuards(SessionGuard)
@@ -23,8 +25,12 @@ export class BooksController {
     constructor(private readonly booksService: BooksService) {}
 
     @Get()
-    findAll() {
-        return this.booksService.findAll();
+    findAll(@Query() query: QueryBooksDto) {
+        return this.booksService.findAll(query);
+    }
+    @Get('genres')
+    findGenres() {
+        return this.booksService.findGenres();
     }
 
     @Get(':id')
