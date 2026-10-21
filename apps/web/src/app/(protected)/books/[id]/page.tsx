@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { getBook } from '@/lib/server/books';
+import { getSessionUser } from '@/lib/server/session';
 
 interface BookDetailPageProps {
     params: Promise<{
@@ -11,7 +12,7 @@ interface BookDetailPageProps {
 export default async function BookDetailPage({ params }: BookDetailPageProps) {
     const { id } = await params;
     const book = await getBook(id);
-
+    const user = await getSessionUser();
     return (
         <section className="max-w-3xl space-y-8">
             <div>
@@ -48,12 +49,14 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             </div>
 
             <div className="flex gap-4">
-                <Link
-                    href={`/books/${book.id}/edit`}
-                    className="rounded-lg bg-emerald-500 px-5 py-3 text-zinc-950"
-                >
-                    Editar libro
-                </Link>
+                {user.role === 'ADMIN' && (
+                    <Link
+                        href={`/books/${book.id}/edit`}
+                        className="rounded-lg bg-emerald-500 px-5 py-3 text-zinc-950"
+                    >
+                        Editar libro
+                    </Link>
+                )}
 
                 <Link href="/books" className="rounded-lg border border-zinc-700 px-5 py-3">
                     Volver
