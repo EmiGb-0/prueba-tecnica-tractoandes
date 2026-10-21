@@ -19,8 +19,12 @@ import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { QueryBooksDto } from './dto/query-books.dto';
 
+import { UserRole } from '../generated/prisma/client';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles/roles.guard';
+
 @Controller('books')
-@UseGuards(SessionGuard)
+@UseGuards(SessionGuard, RolesGuard)
 export class BooksController {
     constructor(private readonly booksService: BooksService) {}
 
@@ -39,16 +43,19 @@ export class BooksController {
     }
 
     @Post()
+    @Roles(UserRole.ADMIN)
     create(@Body() dto: CreateBookDto) {
         return this.booksService.create(dto);
     }
 
     @Patch(':id')
+    @Roles(UserRole.ADMIN)
     update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateBookDto) {
         return this.booksService.update(id, dto);
     }
 
     @Delete(':id')
+    @Roles(UserRole.ADMIN)
     @HttpCode(HttpStatus.NO_CONTENT)
     async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
         await this.booksService.remove(id);
