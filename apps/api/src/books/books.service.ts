@@ -1,5 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
+import type { Prisma } from '../generated/prisma/client';
+import { QueryBooksDto } from './dto/query-books.dto';
+
 import { PrismaService } from '../database/prisma.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
@@ -8,12 +11,73 @@ import { UpdateBookDto } from './dto/update-book.dto';
 export class BooksService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async findAll() {
-        return this.prisma.book.findMany({
+    async findAll(query: QueryBooksDto) {
+        const page = query.page ?? 1;
+        const limit = query.limit ?? 10;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.BookWhereInput = {
+            ...(query.search
+                ? {
+                      OR: [
+                          {
+                              title: {
+                                  contains: query.search,
+                                  mode: 'insensitive' as const,
+                              },
+                          },
+                          {
+                              author: {
+                                  contains: query.search,
+                                  mode: 'insensitive' as const,
+                              },
+                          },
+                      ],
+                  }
+                : {}),
+            ...(query.genre
+                ? {
+                      genre: {
+                          equals: query.genre,
+                          mode: 'insensitive' as const,
+                      },
+                  }
+                : {}),
+        };
+
+        const [books, total] = await this.prisma.$transaction([
+            this.prisma.book.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            }),
+            this.prisma.book.count({ where }),
+        ]);
+
+        return {
+            data: books,
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages: Math.max(1, Math.ceil(total / limit)),
+            },
+        };
+    }
+
+    async findGenres(): Promise<string[]> {
+        const genres = await this.prisma.book.findMany({
+            distinct: ['genre'],
+            select: {
+                genre: true,
+            },
             orderBy: {
-                createdAt: 'desc',
+                genre: 'asc',
             },
         });
+
+        return genres.map((book) => book.genre);
     }
 
     async findOne(id: string) {
