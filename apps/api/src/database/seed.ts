@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma/client';
+import { PrismaClient, UserRole } from '../generated/prisma/client';
 import * as argon2 from 'argon2';
 
 async function main(): Promise<void> {
@@ -23,11 +23,14 @@ async function main(): Promise<void> {
             where: {
                 email: 'demo@tractoandes.test',
             },
-            update: {},
+            update: {
+                role: UserRole.ADMIN,
+            },
             create: {
                 name: 'Usuario Demo',
                 email: 'demo@tractoandes.test',
                 passwordHash,
+                role: UserRole.ADMIN,
             },
         });
 
